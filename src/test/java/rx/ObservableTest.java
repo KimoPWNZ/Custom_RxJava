@@ -58,8 +58,8 @@ public class ObservableTest {
             obs.onNext(2);
             obs.onComplete();
         });
-        observable.flatMap(x ->
-                Observable.create(obs2 -> {
+        observable.<Integer>flatMap(x ->
+                Observable.<Integer>create(obs2 -> {
                     obs2.onNext(x);
                     obs2.onNext(x + 10);
                     obs2.onComplete();

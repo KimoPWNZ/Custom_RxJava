@@ -5,15 +5,11 @@ import java.util.function.Predicate;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Observable<T> {
-    public void subscribe(T observer) {
-    }
-
     public interface OnSubscribe<T> {
         void subscribe(Observer<T> observer);
     }
 
     private final OnSubscribe<T> onSubscribe;
-
     private Scheduler subscribeScheduler;
     private Scheduler observeScheduler;
 
@@ -33,10 +29,12 @@ public class Observable<T> {
             public void onNext(T item) {
                 if (!disposed.get()) observer.onNext(item);
             }
+
             @Override
             public void onError(Throwable t) {
                 if (!disposed.get()) observer.onError(t);
             }
+
             @Override
             public void onComplete() {
                 if (!disposed.get()) observer.onComplete();
@@ -62,7 +60,6 @@ public class Observable<T> {
             public void dispose() {
                 disposed.set(true);
             }
-
             @Override
             public boolean isDisposed() {
                 return disposed.get();
@@ -115,32 +112,32 @@ public class Observable<T> {
     }
 
     public <R> Observable<R> flatMap(Function<T, Observable<R>> mapper) {
-        return new Observable<R>(observer ->
-                this.subscribe(new Observer<T>() {
-                    @Override
-                    public void onNext(T item) {
-                        Observable<R> inner;
-                        try {
-                            inner = mapper.apply(item);
-                        } catch (Throwable t) {
-                            observer.onError(t);
-                            return;
-                        }
-                        inner.subscribe(new Observer<R>() {
-                            @Override
-                            public void onNext(R r) { observer.onNext(r); }
-                            @Override
-                            public void onError(Throwable t) { observer.onError(t); }
-                            @Override
-                            public void onComplete() { /* do nothing */ }
-                        });
+        return new Observable<R>(outerObserver -> {
+            this.subscribe(new Observer<T>() {
+                @Override
+                public void onNext(T item) {
+                    Observable<R> inner;
+                    try {
+                        inner = mapper.apply(item);
+                    } catch (Throwable t) {
+                        outerObserver.onError(t);
+                        return;
                     }
-                    @Override
-                    public void onError(Throwable t) { observer.onError(t); }
-                    @Override
-                    public void onComplete() { observer.onComplete(); }
-                })
-        ).copySchedulersFrom(this);
+                    inner.subscribe(new Observer<R>() {
+                        @Override
+                        public void onNext(R r) { outerObserver.onNext(r); }
+                        @Override
+                        public void onError(Throwable t) { outerObserver.onError(t); }
+                        @Override
+                        public void onComplete() { /* nothing */ }
+                    });
+                }
+                @Override
+                public void onError(Throwable t) { outerObserver.onError(t); }
+                @Override
+                public void onComplete() { outerObserver.onComplete(); }
+            });
+        }).copySchedulersFrom(this);
     }
 
     public Observable<T> subscribeOn(Scheduler scheduler) {
