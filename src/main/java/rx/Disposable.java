@@ -1,4 +1,6 @@
 package rx;
 
-public class Disposable {
+public interface Disposable {
+    void dispose();
+    boolean isDisposed();
 }

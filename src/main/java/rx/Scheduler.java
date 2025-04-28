@@ -1,4 +1,5 @@
 package rx;
 
-public class Scheduler {
+public interface Scheduler {
+    void execute(Runnable task);
 }

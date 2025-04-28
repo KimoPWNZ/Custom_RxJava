@@ -1,6 +1,7 @@
 package rx;
 
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 import rx.schedulers.*;
 
 import java.util.List;
@@ -116,7 +117,6 @@ public class ObservableTest {
             public void onComplete() {}
         });
         d.dispose();
-        // Ensure no further items will be processed after dispose
         Assertions.assertTrue(d.isDisposed());
     }
 
